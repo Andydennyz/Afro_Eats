@@ -100,6 +100,8 @@ export default function RichTextEditor({ content, onChange }: EditorProps) {
     <div className="border border-border rounded-xl overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-wrap gap-0.5 p-2 bg-muted border-b border-border">
+        {/* The toolbar actions are event handlers; they do not read the ref while rendering. */}
+        {/* eslint-disable-next-line react-hooks/refs */}
         {toolbarButtons.map(({ action, icon: Icon, label, active }) => (
           <button
             key={label}

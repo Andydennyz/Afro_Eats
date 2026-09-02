@@ -72,6 +72,8 @@ export default function AdminPostEditor() {
 
   useEffect(() => {
     if (existingPost) {
+      // Hydrate the editor once the asynchronously loaded post changes.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setForm({
         title: existingPost.title,
         slug: existingPost.slug,

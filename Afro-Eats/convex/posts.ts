@@ -10,7 +10,7 @@ export const list = query({
     status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    let q = ctx.db.query("posts");
+    const q = ctx.db.query("posts");
     const results = args.category
       ? await q
           .withIndex("by_category", (qi) => qi.eq("category", args.category!))

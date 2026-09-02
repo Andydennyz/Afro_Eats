@@ -1,5 +1,3 @@
-import React from "react";
-
-export default function NewsletterForm(_props: unknown) {
+export default function NewsletterForm() {
   return <div></div>;
 }

@@ -53,7 +53,8 @@ function StatBubble({ label, value, icon: Icon, delay = 0 }: StatBubbleProps) {
 }
 
 // Format chart date label: "Aug 3"
-function fmtDate(iso: string) {
+function fmtDate(iso: React.ReactNode) {
+  if (typeof iso !== "string") return "";
   const d = new Date(iso);
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
 }
@@ -140,7 +141,7 @@ export default function AdminAnalyticsTab() {
                   fontSize: 12,
                 }}
                 labelFormatter={fmtDate}
-                formatter={(v: number) => [v.toLocaleString(), "Views"]}
+                formatter={(v) => [Number(v ?? 0).toLocaleString(), "Views"]}
               />
               <Area
                 type="monotone"
@@ -259,7 +260,7 @@ export default function AdminAnalyticsTab() {
                     borderRadius: "0.75rem",
                     fontSize: 12,
                   }}
-                  formatter={(v: number) => [v.toLocaleString(), "Views"]}
+                  formatter={(v) => [Number(v ?? 0).toLocaleString(), "Views"]}
                 />
                 <Bar dataKey="views" radius={[0, 4, 4, 0]}>
                   {stats.categoryBreakdown.map((entry) => (

@@ -4,7 +4,7 @@ import escapeHtml from "escape-html";
 import { Hercules } from "@usehercules/sdk";
 import { v, ConvexError } from "convex/values";
 import { internalAction, action } from "./_generated/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 
 const hercules = new Hercules({
   apiKey: process.env.HERCULES_API_KEY!,
@@ -57,6 +57,11 @@ export const sendBroadcast = action({
   handler: async (ctx, { subject, body, postTitle, postUrl }): Promise<{ sent: number }> => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new ConvexError({ message: "Unauthenticated", code: "UNAUTHENTICATED" });
+
+    const user = await ctx.runQuery(api.users.getCurrentUser, {});
+    if (user?.role !== "admin") {
+      throw new ConvexError({ message: "Forbidden", code: "FORBIDDEN" });
+    }
 
     const subscribers = await ctx.runQuery(internal.subscribers.adminListInternal);
 

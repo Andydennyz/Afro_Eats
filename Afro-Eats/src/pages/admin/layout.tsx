@@ -10,7 +10,6 @@ import {
   ChefHat,
   LogOut,
   Home,
-  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button.tsx";
 import { useAuth } from "@/hooks/use-auth.ts";

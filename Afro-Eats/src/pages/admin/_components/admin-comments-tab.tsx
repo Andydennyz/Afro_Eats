@@ -12,16 +12,6 @@ import type { Id } from "@/convex/_generated/dataModel.d.ts";
 
 type CommentStatus = "visible" | "flagged" | "deleted";
 
-type AdminComment = {
-  _id: Id<"comments">;
-  _creationTime: number;
-  content: string;
-  status: string;
-  authorName: string;
-  postTitle: string;
-  postSlug: string;
-};
-
 const STATUS_BADGE: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   visible: { label: "Visible", variant: "secondary" },
   flagged: { label: "Flagged", variant: "destructive" },

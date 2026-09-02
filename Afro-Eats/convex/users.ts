@@ -52,6 +52,11 @@ export const setAdminRole = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthenticated");
+    const caller = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (caller?.role !== "admin") throw new Error("Forbidden");
     await ctx.db.patch(args.userId, { role: "admin" });
   },
 });
@@ -59,7 +64,15 @@ export const setAdminRole = mutation({
 export const getById = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.userId);
+    const user = await ctx.db.get(args.userId);
+    if (!user) return null;
+    return {
+      _id: user._id,
+      name: user.name,
+      displayName: user.displayName,
+      bio: user.bio,
+      role: user.role,
+    };
   },
 });
 
