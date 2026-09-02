@@ -1,10 +1,19 @@
 import { HerculesAuthProvider } from "@usehercules/auth/react";
 
+const authority = import.meta.env.VITE_HERCULES_OIDC_AUTHORITY?.trim();
+const clientId = import.meta.env.VITE_HERCULES_OIDC_CLIENT_ID?.trim();
+
+if (!authority || !clientId) {
+  throw new Error(
+    "Authentication is not configured. Set VITE_HERCULES_OIDC_AUTHORITY and VITE_HERCULES_OIDC_CLIENT_ID in Afro-Eats/.env.local, then restart Vite.",
+  );
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <HerculesAuthProvider
-      authority={import.meta.env.VITE_HERCULES_OIDC_AUTHORITY!}
-      client_id={import.meta.env.VITE_HERCULES_OIDC_CLIENT_ID!}
+      authority={authority}
+      client_id={clientId}
       userManagerSettings={{
         prompt: import.meta.env.VITE_HERCULES_OIDC_PROMPT ?? "select_account",
         response_type:
