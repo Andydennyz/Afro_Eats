@@ -1,5 +1,5 @@
 import { useParams, Link } from "react-router-dom";
-import { usePaginatedQuery, useQuery } from "convex/react";
+import { usePaginatedQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { PostCard } from "../_components/post-card.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
