@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useAction } from "convex/react";
+import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { Button } from "@/components/ui/button.tsx";
 import { Input } from "@/components/ui/input.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
-import { Download, Search } from "lucide-react";
+import { Download, Search, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
 type SearchResult = { id: string; title: string; area: string; category: string; image: string };
@@ -12,6 +12,8 @@ type SearchResult = { id: string; title: string; area: string; category: string;
 export default function FoodDbImportTab() {
   const searchMeals = useAction(api.foodDb.searchMeals);
   const importMeal = useAction(api.foodDb.importMeal);
+  const retryImport = useAction(api.foodDb.retryImport);
+  const failedImports = useQuery(api.foodDb.listFailedImports);
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
@@ -42,6 +44,13 @@ export default function FoodDbImportTab() {
     }
   };
 
+  const retry = async (externalId: string) => {
+    setImportingId(externalId);
+    try { await retryImport({ externalId, status: "draft" }); toast.success("Import retried"); }
+    catch { toast.error("Retry failed. Check the import log."); }
+    finally { setImportingId(null); }
+  };
+
   return (
     <div className="space-y-6 p-5">
       <div>
@@ -64,6 +73,13 @@ export default function FoodDbImportTab() {
           {searching ? "Searching" : "Search"}
         </Button>
       </form>
+
+      {failedImports && failedImports.length > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
+          <h3 className="font-semibold">Failed imports</h3>
+          <div className="mt-3 space-y-2">{failedImports.map((record) => <div key={record._id} className="flex items-center justify-between gap-3 text-sm"><div><span className="font-medium">Meal {record.externalId}</span><p className="text-xs text-muted-foreground">{record.errorMessage} · {record.attemptCount ?? 1} attempt(s)</p></div><Button size="sm" variant="secondary" disabled={importingId === record.externalId} onClick={() => void retry(record.externalId)}><RotateCcw className="mr-1.5 size-3.5" />Retry</Button></div>)}</div>
+        </div>
+      )}
 
       {results.length > 0 && (
         <div className="grid gap-4 sm:grid-cols-2">

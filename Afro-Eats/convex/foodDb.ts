@@ -1,9 +1,14 @@
-import { action, internalMutation } from "./_generated/server";
+import { action, internalMutation, query } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { ConvexError, v } from "convex/values";
 
-const THE_MEAL_DB_BASE_URL = "https://www.themealdb.com/api/json/v1/1";
+const THE_MEAL_DB_BASE_URL = "https://www.themealdb.com/api/json/v1";
+const THE_MEAL_DB_API_KEY = process.env.THEMEALDB_API_KEY ?? "1";
 const PROVIDER = "themealdb";
+
+function endpoint(path: string) {
+  return `${THE_MEAL_DB_BASE_URL}/${THE_MEAL_DB_API_KEY}/${path}`;
+}
 
 type MealDbMeal = {
   idMeal: string;
@@ -88,7 +93,7 @@ export const searchMeals = action({
     const query = args.query.trim();
     if (!query) return [];
 
-    const response = await fetch(`${THE_MEAL_DB_BASE_URL}/search.php?s=${encodeURIComponent(query)}`);
+    const response = await fetch(endpoint(`search.php?s=${encodeURIComponent(query)}`));
     if (!response.ok) throw new ConvexError({ message: "Food DB search failed", code: "FOOD_DB_ERROR" });
     const data = (await response.json()) as MealDbResponse;
     return (data.meals ?? []).map((meal) => ({
@@ -101,6 +106,17 @@ export const searchMeals = action({
   },
 });
 
+export const listFailedImports = query({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    const admin = await ctx.db.query("users").withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier)).unique();
+    if (!admin || admin.role !== "admin") return [];
+    return await ctx.db.query("contentImports").collect().then((records) => records.filter((record) => record.status === "failed").sort((a, b) => b.lastSyncedAt.localeCompare(a.lastSyncedAt)));
+  },
+});
+
 export const importMeal = action({
   args: { mealId: v.string(), status: v.union(v.literal("draft"), v.literal("published")) },
   handler: async (ctx, args): Promise<{ postId: string; operation: "imported" | "updated" }> => {
@@ -110,19 +126,47 @@ export const importMeal = action({
     if (!user || user.role !== "admin") {
       throw new ConvexError({ message: "Forbidden", code: "FORBIDDEN" });
     }
-    const response = await fetch(`${THE_MEAL_DB_BASE_URL}/lookup.php?i=${encodeURIComponent(args.mealId)}`);
+    try {
+      const response = await fetch(endpoint(`lookup.php?i=${encodeURIComponent(args.mealId)}`));
+      if (!response.ok) throw new ConvexError({ message: "Food DB import failed", code: "FOOD_DB_ERROR" });
+      const data = (await response.json()) as MealDbResponse;
+      const meal = data.meals?.[0];
+      if (!meal) throw new ConvexError({ message: "Food DB recipe not found", code: "NOT_FOUND" });
+      return await ctx.runMutation(internal.foodDb.upsertImportedMeal, {
+        tokenIdentifier: identity.tokenIdentifier,
+        externalId: meal.idMeal,
+        status: args.status,
+        meal: mealToImport(meal),
+      });
+    } catch (error) {
+      await ctx.runMutation(internal.foodDb.recordImportFailure, {
+        tokenIdentifier: identity.tokenIdentifier,
+        externalId: args.mealId,
+        errorMessage: error instanceof Error ? error.message : "Unknown Food DB import error",
+      });
+      throw error;
+    }
+  },
+});
+
+export const retryImport = action({
+  args: { externalId: v.string(), status: v.union(v.literal("draft"), v.literal("published")) },
+  handler: async (ctx, args): Promise<{ postId: string; operation: "imported" | "updated" }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ message: "Unauthenticated", code: "UNAUTHENTICATED" });
+    const user = await ctx.runQuery(api.users.getCurrentUser, {});
+    if (!user || user.role !== "admin") throw new ConvexError({ message: "Forbidden", code: "FORBIDDEN" });
+    const response = await fetch(endpoint(`lookup.php?i=${encodeURIComponent(args.externalId)}`));
     if (!response.ok) throw new ConvexError({ message: "Food DB import failed", code: "FOOD_DB_ERROR" });
     const data = (await response.json()) as MealDbResponse;
     const meal = data.meals?.[0];
     if (!meal) throw new ConvexError({ message: "Food DB recipe not found", code: "NOT_FOUND" });
-
-    const result: { postId: string; operation: "imported" | "updated" } = await ctx.runMutation(internal.foodDb.upsertImportedMeal, {
+    return await ctx.runMutation(internal.foodDb.upsertImportedMeal, {
       tokenIdentifier: identity.tokenIdentifier,
       externalId: meal.idMeal,
       status: args.status,
       meal: mealToImport(meal),
     });
-    return result;
   },
 });
 
@@ -162,13 +206,28 @@ export const upsertImportedMeal = internalMutation({
         ...post, importedAt: existing.importedAt, publishedAt: existing.publishedAt ?? post.publishedAt,
       });
       const importRecord = await ctx.db.query("contentImports").withIndex("by_provider_and_external_id", (q) => q.eq("provider", PROVIDER).eq("externalId", args.externalId)).unique();
-      if (importRecord) await ctx.db.patch(importRecord._id, { lastSyncedAt: now, status: "updated" });
-      else await ctx.db.insert("contentImports", { provider: PROVIDER, externalId: args.externalId, postId: existing._id, importedById: admin._id, importedAt: now, lastSyncedAt: now, status: "updated" });
+      if (importRecord) await ctx.db.patch(importRecord._id, { postId: existing._id, lastSyncedAt: now, status: "updated", errorMessage: undefined });
+      else await ctx.db.insert("contentImports", { provider: PROVIDER, externalId: args.externalId, postId: existing._id, importedById: admin._id, importedAt: now, lastSyncedAt: now, status: "updated", attemptCount: 1 });
       return { postId: existing._id, operation: "updated" as const };
     }
 
     const postId = await ctx.db.insert("posts", post);
-    await ctx.db.insert("contentImports", { provider: PROVIDER, externalId: args.externalId, postId, importedById: admin._id, importedAt: now, lastSyncedAt: now, status: "imported" });
+    await ctx.db.insert("contentImports", { provider: PROVIDER, externalId: args.externalId, postId, importedById: admin._id, importedAt: now, lastSyncedAt: now, status: "imported", attemptCount: 1 });
     return { postId, operation: "imported" as const };
+  },
+});
+
+export const recordImportFailure = internalMutation({
+  args: { tokenIdentifier: v.string(), externalId: v.string(), errorMessage: v.string() },
+  handler: async (ctx, args) => {
+    const admin = await ctx.db.query("users").withIndex("by_token", (q) => q.eq("tokenIdentifier", args.tokenIdentifier)).unique();
+    if (!admin || admin.role !== "admin") throw new ConvexError({ message: "Forbidden", code: "FORBIDDEN" });
+    const now = new Date().toISOString();
+    const existing = await ctx.db.query("contentImports").withIndex("by_provider_and_external_id", (q) => q.eq("provider", PROVIDER).eq("externalId", args.externalId)).unique();
+    if (existing) {
+      await ctx.db.patch(existing._id, { status: "failed", errorMessage: args.errorMessage, lastSyncedAt: now, attemptCount: (existing.attemptCount ?? 0) + 1 });
+    } else {
+      await ctx.db.insert("contentImports", { provider: PROVIDER, externalId: args.externalId, importedById: admin._id, importedAt: now, lastSyncedAt: now, status: "failed", errorMessage: args.errorMessage, attemptCount: 1 });
+    }
   },
 });

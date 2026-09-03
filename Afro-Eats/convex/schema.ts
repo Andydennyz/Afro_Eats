@@ -111,12 +111,13 @@ export default defineSchema({
   contentImports: defineTable({
     provider: v.string(),
     externalId: v.string(),
-    postId: v.id("posts"),
+    postId: v.optional(v.id("posts")),
     importedById: v.id("users"),
     importedAt: v.string(),
     lastSyncedAt: v.string(),
     status: v.union(v.literal("imported"), v.literal("updated"), v.literal("failed")),
     errorMessage: v.optional(v.string()),
+    attemptCount: v.optional(v.number()),
   })
     .index("by_provider_and_external_id", ["provider", "externalId"])
     .index("by_post", ["postId"]),
