@@ -27,6 +27,15 @@ export default defineSchema({
     seoDescription: v.optional(v.string()),
     publishedAt: v.optional(v.string()), // ISO 8601
     viewCount: v.optional(v.number()),
+    // Content provenance. Existing editorial posts intentionally omit this field
+    // and are treated as "admin" by readers until they are next edited.
+    source: v.optional(v.union(v.literal("admin"), v.literal("community"), v.literal("foodDb"))),
+    externalSource: v.optional(v.string()),
+    externalId: v.optional(v.string()),
+    externalUrl: v.optional(v.string()),
+    sourceAttribution: v.optional(v.string()),
+    importedAt: v.optional(v.string()),
+    lastSyncedAt: v.optional(v.string()),
     // Recipe-specific fields (only present when category === "recipes")
     recipeData: v.optional(v.object({
       prepTime: v.number(),       // minutes
@@ -50,6 +59,8 @@ export default defineSchema({
     .index("by_category", ["category"])
     .index("by_author", ["authorId"])
     .index("by_featured", ["featured"])
+    .index("by_source", ["source"])
+    .index("by_external_source_and_id", ["externalSource", "externalId"])
     .searchIndex("search_posts", {
       searchField: "title",
       filterFields: ["status", "category"],
@@ -95,4 +106,17 @@ export default defineSchema({
   })
     .index("by_email", ["email"])
     .index("by_status", ["status"]),
+
+  contentImports: defineTable({
+    provider: v.string(),
+    externalId: v.string(),
+    postId: v.id("posts"),
+    importedById: v.id("users"),
+    importedAt: v.string(),
+    lastSyncedAt: v.string(),
+    status: v.union(v.literal("imported"), v.literal("updated"), v.literal("failed")),
+    errorMessage: v.optional(v.string()),
+  })
+    .index("by_provider_and_external_id", ["provider", "externalId"])
+    .index("by_post", ["postId"]),
 });

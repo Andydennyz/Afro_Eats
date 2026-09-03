@@ -136,6 +136,7 @@ export const create = mutation({
     return await ctx.db.insert("posts", {
       ...args,
       authorId: user._id,
+      source: "admin",
       publishedAt: args.status === "published" ? new Date().toISOString() : undefined,
       viewCount: 0,
     });

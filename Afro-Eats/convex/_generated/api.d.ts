@@ -12,6 +12,7 @@ import type * as analytics from "../analytics.js";
 import type * as bookmarks from "../bookmarks.js";
 import type * as comments from "../comments.js";
 import type * as emails from "../emails.js";
+import type * as foodDb from "../foodDb.js";
 import type * as http from "../http.js";
 import type * as postLikes from "../postLikes.js";
 import type * as posts from "../posts.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   bookmarks: typeof bookmarks;
   comments: typeof comments;
   emails: typeof emails;
+  foodDb: typeof foodDb;
   http: typeof http;
   postLikes: typeof postLikes;
   posts: typeof posts;

@@ -346,6 +346,11 @@ export default function PostPage() {
           {/* Category + tags */}
           <div className="flex items-center flex-wrap gap-2 mb-5">
             <CategoryBadge category={post.category} />
+            {post.source === "foodDb" && (
+              <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                Food DB recipe
+              </span>
+            )}
             {tags.map((tag) => (
               <Link
                 key={tag}
@@ -416,6 +421,25 @@ export default function PostPage() {
 
         {/* Recipe card — shown before prose for recipe posts */}
         {post.recipeData && <RecipeCard data={post.recipeData} />}
+
+        {post.sourceAttribution && (
+          <p className="-mt-4 mb-8 text-xs text-muted-foreground">
+            {post.sourceAttribution}
+            {post.externalUrl && (
+              <>
+                {" · "}
+                <a
+                  href={post.externalUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline hover:text-primary"
+                >
+                  View original source
+                </a>
+              </>
+            )}
+          </p>
+        )}
 
         {/* Article body */}
         <motion.div

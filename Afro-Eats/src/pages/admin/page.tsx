@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { PenSquare, Eye, FileText, MessageSquare, Trash2, Edit, Users, AlertTriangle, BarChart2 } from "lucide-react";
+import { PenSquare, Eye, FileText, MessageSquare, Trash2, Edit, Users, AlertTriangle, BarChart2, Download } from "lucide-react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
@@ -14,6 +14,7 @@ import AdminUsersTab from "./_components/admin-users-tab.tsx";
 import AdminSubscribersTab from "./_components/admin-subscribers-tab.tsx";
 import AdminCommentsTab from "./_components/admin-comments-tab.tsx";
 import AdminAnalyticsTab from "./_components/admin-analytics-tab.tsx";
+import FoodDbImportTab from "./_components/food-db-import-tab.tsx";
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
   return (
@@ -35,7 +36,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"posts" | "analytics" | "comments" | "users" | "subscribers">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "analytics" | "comments" | "users" | "subscribers" | "foodDb">("posts");
   const { results: posts, status } = usePaginatedQuery(
     api.posts.adminList,
     {},
@@ -121,6 +122,13 @@ export default function AdminDashboard() {
           <MessageSquare className="w-4 h-4 inline mr-1.5" />
           Newsletter
         </button>
+        <button
+          onClick={() => setActiveTab("foodDb")}
+          className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-b-2 -mb-px ${activeTab === "foodDb" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+        >
+          <Download className="w-4 h-4 inline mr-1.5" />
+          Food DB
+        </button>
       </div>
 
       {activeTab === "analytics" ? (
@@ -129,6 +137,10 @@ export default function AdminDashboard() {
             <h2 className="font-serif text-lg font-bold">Analytics</h2>
           </div>
           <AdminAnalyticsTab />
+        </div>
+      ) : activeTab === "foodDb" ? (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <FoodDbImportTab />
         </div>
       ) : activeTab === "subscribers" ? (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
