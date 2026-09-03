@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
+import { useState } from "react";
 import { BookOpen, CookingPot, Eye, Hash, Map, Newspaper, Radio, TrendingUp } from "lucide-react";
 
 const CATEGORIES = [
@@ -277,9 +278,10 @@ function TagCloud() {
 
 
 function LatestPosts() {
+  const [source, setSource] = useState("");
   const { results, status, loadMore } = usePaginatedQuery(
     api.posts.list,
-    { status: "published" },
+    { status: "published", source: source ? source as "admin" | "community" | "foodDb" : undefined },
     { initialNumItems: 6 },
   );
 
@@ -288,6 +290,12 @@ function LatestPosts() {
       <div className="flex items-center justify-between mb-6">
         <h2 className="font-serif text-2xl font-bold">Latest Posts</h2>
         <div className="h-px flex-1 mx-4 bg-border" />
+        <select value={source} onChange={(event) => setSource(event.target.value)} className="border-input bg-background rounded-md border px-2 py-1.5 text-sm">
+          <option value="">All sources</option>
+          <option value="admin">Afro Eats originals</option>
+          <option value="community">Community</option>
+          <option value="foodDb">Food DB</option>
+        </select>
       </div>
       {status === "LoadingFirstPage" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

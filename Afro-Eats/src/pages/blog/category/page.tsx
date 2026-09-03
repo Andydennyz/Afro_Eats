@@ -207,6 +207,7 @@ export default function CategoryPage() {
   const [selectedDifficulty, setSelectedDifficulty] = useState<Difficulty | "">("");
   const [selectedCuisine, setSelectedCuisine] = useState("");
   const [selectedCookTime, setSelectedCookTime] = useState<CookTimeRange>("Any time");
+  const [selectedSource, setSelectedSource] = useState("");
 
   const recipeStats = useQuery(
     api.posts.getRecipeStats,
@@ -215,7 +216,10 @@ export default function CategoryPage() {
 
   const { results, status, loadMore } = usePaginatedQuery(
     api.posts.list,
-    { category: category ?? "" },
+    {
+      category: category ?? "",
+      source: selectedSource ? selectedSource as "admin" | "community" | "foodDb" : undefined,
+    },
     { initialNumItems: 18 },
   );
 
@@ -223,12 +227,14 @@ export default function CategoryPage() {
     selectedDifficulty !== "",
     selectedCuisine !== "",
     selectedCookTime !== "Any time",
+    selectedSource !== "",
   ].filter(Boolean).length;
 
   const clearFilters = () => {
     setSelectedDifficulty("");
     setSelectedCuisine("");
     setSelectedCookTime("Any time");
+    setSelectedSource("");
   };
 
   const filteredResults = useMemo(() => {
@@ -289,6 +295,15 @@ export default function CategoryPage() {
             onClear={clearFilters}
           />
         )}
+        <div className="flex items-center gap-2 mt-4 text-sm">
+          <span className="text-muted-foreground">Source:</span>
+          <select value={selectedSource} onChange={(event) => setSelectedSource(event.target.value)} className="border-input bg-background rounded-md border px-2 py-1.5">
+            <option value="">All sources</option>
+            <option value="admin">Afro Eats originals</option>
+            <option value="community">Community</option>
+            <option value="foodDb">Food DB</option>
+          </select>
+        </div>
 
         <div className="mt-8">
           {status === "LoadingFirstPage" ? (

@@ -13,6 +13,7 @@ import AdminPostEditor from "./pages/admin/editor/page.tsx";
 
 import BookmarksPage from "./pages/bookmarks/page.tsx";
 import ProfilePage from "./pages/profile/page.tsx";
+import SubmitPage from "./pages/submit/page.tsx";
 
 import TagPage from "./pages/blog/tag/page.tsx";
 
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/tag/:tag" element={<TagPage />} />
             <Route path="/bookmarks" element={<BookmarksPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/submit" element={<SubmitPage />} />
           </Route>
 
           <Route path="/admin" element={<AdminLayout />}>

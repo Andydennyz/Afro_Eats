@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button.tsx";
 import { Badge } from "@/components/ui/badge.tsx";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
-import { PenSquare, Eye, FileText, MessageSquare, Trash2, Edit, Users, AlertTriangle, BarChart2, Download } from "lucide-react";
+import { PenSquare, Eye, FileText, MessageSquare, Trash2, Edit, Users, AlertTriangle, BarChart2, Download, Send } from "lucide-react";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import { motion } from "motion/react";
@@ -15,6 +15,7 @@ import AdminSubscribersTab from "./_components/admin-subscribers-tab.tsx";
 import AdminCommentsTab from "./_components/admin-comments-tab.tsx";
 import AdminAnalyticsTab from "./_components/admin-analytics-tab.tsx";
 import FoodDbImportTab from "./_components/food-db-import-tab.tsx";
+import AdminSubmissionsTab from "./_components/admin-submissions-tab.tsx";
 
 function StatCard({ label, value, icon: Icon }: { label: string; value: number; icon: React.ElementType }) {
   return (
@@ -36,7 +37,7 @@ function StatCard({ label, value, icon: Icon }: { label: string; value: number; 
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"posts" | "analytics" | "comments" | "users" | "subscribers" | "foodDb">("posts");
+  const [activeTab, setActiveTab] = useState<"posts" | "analytics" | "comments" | "users" | "subscribers" | "foodDb" | "submissions">("posts");
   const { results: posts, status } = usePaginatedQuery(
     api.posts.adminList,
     {},
@@ -129,6 +130,9 @@ export default function AdminDashboard() {
           <Download className="w-4 h-4 inline mr-1.5" />
           Food DB
         </button>
+        <button onClick={() => setActiveTab("submissions")} className={`px-4 py-2 text-sm font-medium transition-colors cursor-pointer border-b-2 -mb-px ${activeTab === "submissions" ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
+          <Send className="w-4 h-4 inline mr-1.5" /> Submissions
+        </button>
       </div>
 
       {activeTab === "analytics" ? (
@@ -142,6 +146,8 @@ export default function AdminDashboard() {
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <FoodDbImportTab />
         </div>
+      ) : activeTab === "submissions" ? (
+        <div className="bg-card rounded-2xl border border-border overflow-hidden"><div className="px-5 py-4 border-b border-border"><h2 className="font-serif text-lg font-bold">Community Submissions</h2></div><AdminSubmissionsTab /></div>
       ) : activeTab === "subscribers" ? (
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="px-5 py-4 border-b border-border">

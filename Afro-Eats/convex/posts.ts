@@ -8,6 +8,7 @@ export const list = query({
     paginationOpts: paginationOptsValidator,
     category: v.optional(v.string()),
     status: v.optional(v.string()),
+    source: v.optional(v.union(v.literal("admin"), v.literal("community"), v.literal("foodDb"))),
   },
   handler: async (ctx, args) => {
     const q = ctx.db.query("posts");
@@ -16,13 +17,18 @@ export const list = query({
           .withIndex("by_category", (qi) => qi.eq("category", args.category!))
           .order("desc")
           .paginate(args.paginationOpts)
-      : await q.withIndex("by_status", (qi) => qi.eq("status", args.status ?? "published"))
+      : args.source
+        ? await q.withIndex("by_status_and_source", (qi) => qi.eq("status", args.status ?? "published").eq("source", args.source!))
+          .order("desc")
+          .paginate(args.paginationOpts)
+        : await q.withIndex("by_status", (qi) => qi.eq("status", args.status ?? "published"))
           .order("desc")
           .paginate(args.paginationOpts);
 
     const page = await Promise.all(
       results.page
         .filter((p) => (args.status ? p.status === args.status : p.status === "published"))
+        .filter((p) => !args.source || (p.source ?? "admin") === args.source)
         .map(async (post) => {
           const author = await ctx.db.get(post.authorId);
           return { ...post, authorName: author?.name ?? "Unknown" };
@@ -202,6 +208,29 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.id);
+  },
+});
+
+export const backfillAdminSources = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new ConvexError({ message: "Unauthenticated", code: "UNAUTHENTICATED" });
+    const admin = await ctx.db
+      .query("users")
+      .withIndex("by_token", (q) => q.eq("tokenIdentifier", identity.tokenIdentifier))
+      .unique();
+    if (!admin || admin.role !== "admin") throw new ConvexError({ message: "Forbidden", code: "FORBIDDEN" });
+
+    const posts = await ctx.db.query("posts").collect();
+    let updated = 0;
+    for (const post of posts) {
+      if (!post.source) {
+        await ctx.db.patch(post._id, { source: "admin" });
+        updated += 1;
+      }
+    }
+    return { updated };
   },
 });
 

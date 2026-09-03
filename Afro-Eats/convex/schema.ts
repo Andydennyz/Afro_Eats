@@ -60,6 +60,7 @@ export default defineSchema({
     .index("by_author", ["authorId"])
     .index("by_featured", ["featured"])
     .index("by_source", ["source"])
+    .index("by_status_and_source", ["status", "source"])
     .index("by_external_source_and_id", ["externalSource", "externalId"])
     .searchIndex("search_posts", {
       searchField: "title",
@@ -119,4 +120,56 @@ export default defineSchema({
   })
     .index("by_provider_and_external_id", ["provider", "externalId"])
     .index("by_post", ["postId"]),
+
+  submissions: defineTable({
+    submittedById: v.id("users"),
+    title: v.string(),
+    slug: v.string(),
+    excerpt: v.string(),
+    content: v.string(),
+    coverImage: v.optional(v.string()),
+    category: v.string(),
+    tags: v.array(v.string()),
+    recipeData: v.optional(v.object({
+      prepTime: v.number(),
+      cookTime: v.number(),
+      servings: v.number(),
+      difficulty: v.string(),
+      ingredients: v.array(v.object({ amount: v.string(), name: v.string() })),
+      steps: v.array(v.object({ step: v.number(), instruction: v.string() })),
+      cuisine: v.optional(v.string()),
+      calories: v.optional(v.string()),
+    })),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("submitted"),
+      v.literal("rejected"),
+      v.literal("published"),
+    ),
+    reviewNote: v.optional(v.string()),
+    reviewedAt: v.optional(v.string()),
+    reviewedById: v.optional(v.id("users")),
+    publishedPostId: v.optional(v.id("posts")),
+  })
+    .index("by_submitter", ["submittedById"])
+    .index("by_status", ["status"]),
+
+  follows: defineTable({
+    followerId: v.id("users"),
+    followingId: v.id("users"),
+  })
+    .index("by_follower", ["followerId"])
+    .index("by_following", ["followingId"])
+    .index("by_pair", ["followerId", "followingId"]),
+
+  notifications: defineTable({
+    userId: v.id("users"),
+    type: v.string(),
+    message: v.string(),
+    actorId: v.optional(v.id("users")),
+    postId: v.optional(v.id("posts")),
+    read: v.boolean(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_user_and_read", ["userId", "read"]),
 });

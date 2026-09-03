@@ -1,9 +1,9 @@
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import NewsletterForm from "./_components/newsletter-form.tsx";
-import { Moon, Sun, Search, Menu, X, ChefHat, Bookmark } from "lucide-react";
+import { Moon, Sun, Search, Menu, X, ChefHat, Bookmark, Send, Bell } from "lucide-react";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
-import { useQuery } from "convex/react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api.js";
 import { SignInButton } from "@/components/ui/signin.tsx";
 import { Button } from "@/components/ui/button.tsx";
@@ -14,7 +14,10 @@ const CATEGORIES = ["Articles", "Recipes", "News", "Stories", "Guides"];
 
 function NavUserArea() {
   const user = useQuery(api.users.getCurrentUser);
+  const notifications = useQuery(api.social.listMine);
+  const markRead = useMutation(api.social.markRead);
   const navigate = useNavigate();
+  const unread = notifications?.filter((notification) => !notification.read) ?? [];
   return (
     <div className="flex items-center gap-2">
       {user?.role === "admin" && (
@@ -23,6 +26,11 @@ function NavUserArea() {
         </Button>
       )}
       <Authenticated>
+        <div className="relative group">
+          <Button variant="ghost" size="icon" onClick={() => unread[0] && void markRead({ id: unread[0]._id })} className="cursor-pointer" title="Notifications"><Bell className="w-4 h-4" />{unread.length > 0 && <span className="absolute -right-0.5 -top-0.5 min-w-4 h-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center">{unread.length}</span>}</Button>
+          {notifications && notifications.length > 0 && <div className="hidden group-hover:block absolute right-0 top-10 z-50 w-72 rounded-lg border border-border bg-popover p-2 shadow-lg">{notifications.slice(0, 5).map((notification) => <button key={notification._id} onClick={() => void markRead({ id: notification._id })} className={`block w-full text-left rounded-md px-3 py-2 text-xs hover:bg-muted ${notification.read ? "text-muted-foreground" : "font-medium"}`}>{notification.message}</button>)}</div>}
+        </div>
+        <Button variant="ghost" size="icon" onClick={() => navigate("/submit")} className="cursor-pointer" title="Submit content"><Send className="w-4 h-4" /></Button>
         <Button
           variant="ghost"
           size="icon"

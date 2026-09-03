@@ -4,7 +4,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
-import { ArrowLeft, UserCircle, MessageSquare, Heart, Bookmark, Edit2, Check, X, ShieldCheck } from "lucide-react";
+import { ArrowLeft, UserCircle, MessageSquare, Heart, Bookmark, Edit2, Check, X, ShieldCheck, UserPlus, UserCheck } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -89,6 +89,8 @@ function EditProfileForm({ currentDisplayName, currentBio, onClose }: {
 function ProfileContent({ userId }: { userId: Id<"users"> }) {
   const profile = useQuery(api.users.getPublicProfile, { userId });
   const currentUser = useQuery(api.users.getCurrentUser);
+  const followStatus = useQuery(api.social.getFollowStatus, currentUser?._id === userId ? "skip" : { userId });
+  const toggleFollow = useMutation(api.social.toggleFollow);
   const [editing, setEditing] = useState(false);
   const navigate = useNavigate();
 
@@ -149,6 +151,12 @@ function ProfileContent({ userId }: { userId: Id<"users"> }) {
               </span>
             )}
           </div>
+          {!isOwnProfile && currentUser && followStatus && (
+            <Button size="sm" variant={followStatus.following ? "secondary" : "default"} className="mt-3 cursor-pointer" onClick={() => void toggleFollow({ userId }).catch(() => toast.error("Could not update follow status"))}>
+              {followStatus.following ? <UserCheck className="w-3.5 h-3.5 mr-1.5" /> : <UserPlus className="w-3.5 h-3.5 mr-1.5" />}
+              {followStatus.following ? "Following" : "Follow"}
+            </Button>
+          )}
           {profile.user.bio ? (
             <p className="text-muted-foreground text-sm mt-1 leading-relaxed">{profile.user.bio}</p>
           ) : isOwnProfile ? (
