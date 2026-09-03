@@ -6,14 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { motion } from "motion/react";
 import { Link } from "react-router-dom";
-import { TrendingUp, Eye, Hash } from "lucide-react";
+import { BookOpen, CookingPot, Eye, Hash, Map, Newspaper, Radio, TrendingUp } from "lucide-react";
 
 const CATEGORIES = [
-  { label: "Articles", slug: "articles", emoji: "📰" },
-  { label: "Recipes", slug: "recipes", emoji: "🍲" },
-  { label: "News", slug: "news", emoji: "📡" },
-  { label: "Stories", slug: "stories", emoji: "📖" },
-  { label: "Guides", slug: "guides", emoji: "🗺️" },
+  { label: "Articles", slug: "articles", icon: Newspaper },
+  { label: "Recipes", slug: "recipes", icon: CookingPot },
+  { label: "News", slug: "news", icon: Radio },
+  { label: "Stories", slug: "stories", icon: BookOpen },
+  { label: "Guides", slug: "guides", icon: Map },
 ];
 
 const HERO_IMAGES = [
@@ -140,7 +140,11 @@ function CategoryBrowse() {
               to={`/category/${cat.slug}`}
               className="flex flex-col items-center gap-2 p-4 rounded-2xl bg-card border border-border hover:border-primary/50 hover:shadow-md transition-all cursor-pointer group text-center"
             >
-              <span className="text-3xl">{cat.emoji}</span>
+              <cat.icon
+                aria-hidden="true"
+                className="size-8 text-primary transition-transform group-hover:scale-110"
+                strokeWidth={1.8}
+              />
               <span className="font-medium text-sm group-hover:text-primary transition-colors">
                 {cat.label}
               </span>
